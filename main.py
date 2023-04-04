@@ -65,30 +65,34 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+
+def diff(x):
+    return str(dx[x].iloc[-1] - dx[x].iloc[-2])
+
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 
 kpi1.metric(
     label="🌡️ Temperature (°C)",
-    value="25.5",
-    delta="-0.5",
+    value=str(dx["Temp"].iloc[-1]),
+    delta=diff("Temp"),
 )
 
 kpi2.metric(
     label="💧 Soil Moisture",
-    value="600",
-    delta="-0.5",
+    value= str(dx["Moisture"].iloc[-1]),
+    delta=diff("Moisture"),
 )
 
 kpi3.metric(
     label="🌤️ Light Intensity",
-    value="120",
-    delta="5",
+    value=str(dx["Light"].iloc[-1]),
+    delta=diff("Light"),
 )
 
 kpi4.metric(
     label="🌫️ Humidity (%)",
-    value="60",
-    delta="0.5",
+    value=str(dx["Hum"].iloc[-1]),
+    delta=diff("Hum"),
 )
 st.markdown("""
 
