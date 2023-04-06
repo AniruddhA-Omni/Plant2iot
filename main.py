@@ -2,6 +2,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore, db
 import pandas as pd
 import streamlit as st
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pickle
@@ -20,11 +21,11 @@ except ValueError as e:
 
 ##################################### Converting to dataframe and adding condition column ############################
 def condition(x):
-    if x["Moisture"] > 800:
+    if x["Moisture"] > 700:
         if x["Temp"] >= 33:
             return "Unbearable"
         return "Dry"
-    elif x["Moisture"] < 400:
+    elif x["Moisture"] < 450:
         return "Moist"
     else:
         return "Healthy"
@@ -164,16 +165,82 @@ if st.button("Plot Analytics"):
     st.write(dx.tail())
     st.write("Last Condition:",dx["Condition"].iloc[-1])
     
+########################################################## Machine Learning #########################################
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, classification_report
+
+X = dx.drop(["Condition"], axis=1)
+y = dx["Condition"]
+
+st.subheader("Machine Learning")
+st.markdown("""
+**1.** The following model is used to predict the condition of the plant.
+
+**2.** Random Forest Classifier is used.
+
+**3.** The model is trained on the data collected from the plant.
+
+**4.** The model is then tested on the data collected from the plant.
+
+**5.** The accuracy of the model is shown below.
+""")
+
+def model_gen():
+    model = RandomForestClassifier()
+
+    model.fit(X, y)
+
+    y_pred = model.predict(X)
+
+    st.write("Accuracy:",model.score(X, y)*100)
+    #############################
+
+    st.write("Confusion Matrix:")
+    # Get and reshape confusion matrix data
+    matrix = confusion_matrix(y, y_pred)
+
+    # Build the plot
+    fig, ax = plt.subplots()
+    sns.set(font_scale=1.4)
+    sns.heatmap(matrix, annot=True,
+                cmap=plt.cm.Greens, linewidths=0.2, ax=ax)
+    # Add labels to the plot
+    class_names = ['Dry', 'Healthy', 'Moist']
+    tick_marks = np.arange(len(class_names))
+    tick_marks2 = tick_marks + 0.5
+    plt.xticks(tick_marks, class_names, rotation=25)
+    plt.yticks(tick_marks2, class_names, rotation=0)
+    plt.xlabel('Predicted label')
+    plt.ylabel('True label')
+    plt.title('Confusion Matrix for Random Forest Model')
+    st.pyplot(fig)
+    #######################################
+    report = classification_report(y, y_pred, output_dict=True)
+    rp = pd.DataFrame(report).transpose()
+    st.write("Classification Report", rp)
+
+    ######################################
+    def dowload_model(model):
+        output_model = pickle.dumps(model)
+        b64 = base64.b64encode(output_model).decode()
+        href = f'<a href="data:file/pkl;base64,{b64}" download="model.pkl">Download Trained Model</a>'
+        return href
+    st.markdown(dowload_model(model), unsafe_allow_html=True)
+    
+if st.button("Generate Model"):
+    model_gen()
+
 ########################################################## Conclusion ################################################
 st.subheader("Conclusions")
 st.markdown("""
-**1.** The plant is **healthy** when the moisture value is between 400 and 800.
+**1.** The plant is **healthy** when the moisture value is between 450 and 700.
 
-**2.** The plant is **dry** when the moisture value is greater than 800.
+**2.** The plant is **dry** when the moisture value is greater than 700.
 
-**3.** The plant is **moist** when the moisture value is less than 400.
+**3.** The plant is **moist** when the moisture value is less than 450.
 
-**4.** The plant is **unbearable** when the moisture value is greater than 800 and the temperature value is greater than or equal to 33.
+**4.** The plant is **unbearable** when the moisture value is greater than 700 and the temperature value is greater than or equal to 33.
 
 """)
 if st.button("View Suggestions"):
